@@ -412,7 +412,7 @@ class Buzzdata
             response = @client.search 'buzzdata'
             response.should have_at_least(1).item
             response.each do |x|
-              %(label value id url type).each do |key|
+              %w(label value id url type).each do |key|
                 x.should have_key(key)
               end
             end
@@ -462,7 +462,7 @@ class Buzzdata
 
           it 'should raise an error if dataset is unpublished' do
             dataset = create_dataset
-            expect{@client.download_data dataset['id']}.to raise_error(Buzzdata::Error, '')
+            expect{@client.download_data dataset['id']}.to raise_error(StandardError, /No dataset could be found for/)
           end
 
           it 'should raise an error if dataset is nonexistent' do
