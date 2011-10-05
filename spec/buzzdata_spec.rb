@@ -5,6 +5,15 @@ require 'securerandom'
 
 class Buzzdata
   describe Buzzdata do
+    GENERIC_USER = 'eviltrout'
+    NONEXISTENT_USER = 'missing'
+    USER_WITH_PRIVATE_DATASET = 'jpmckinney'
+
+    CLONABLE_DATASET = 'eviltrout/pets'
+    NONEXISTENT_DATASET = 'missing/missing'
+    PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER = 'jpmckinney/private'
+    UNPUBLISHED_DATASET_BELONGING_TO_ANOTHER_USER = 'jpmckinney/unpublished'
+
     def fixture_path(basename)
       File.expand_path File.dirname(__FILE__) + '/fixtures/' + basename
     end
@@ -58,8 +67,6 @@ class Buzzdata
         dataset = create_dataset attributes
         upload = @client.start_upload dataset['id'], File.new(fixture_path('data.csv'))
         sleep 1 while upload.in_progress?
-        p upload
-        p dataset
         @client.publish_dataset dataset['id']
       end
 
@@ -90,7 +97,7 @@ class Buzzdata
           @client = Buzzdata.new nil, :config_file => 'config/test.yml'
           @username = YAML.load_file('config/test.yml')['username']
         rescue Buzzdata::Error
-          raise "To run tests, you must create a config/test.yml YAML file with api_key and username keys"
+          raise "To run tests, you must create a config/test.yml YAML file with api_key and username keys. This user should not have any datasets."
         end
       end
 
@@ -105,11 +112,11 @@ class Buzzdata
         end
 
         it 'should raise an error if dataset is nonexistent' do
-          expect{@client.delete_dataset 'missing/missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          expect{@client.delete_dataset NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
         end
 
         it 'should raise an error if dataset belongs to another user' do
-          expect{@client.delete_dataset 'eviltrout/pets'}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          expect{@client.delete_dataset CLONABLE_DATASET}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
         end
       end
 
@@ -240,7 +247,7 @@ class Buzzdata
           end
 
           it 'should raise an error if dataset is nonexistent' do
-            expect{@client.dataset_overview 'missing/missing'}.to raise_error(Buzzdata::Error, "That dataset could not be found")
+            expect{@client.dataset_overview NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
           end
 
           it 'should get the overview of a dataset if it belongs to user and is unpublished' do
@@ -253,24 +260,50 @@ class Buzzdata
             get_and_validate dataset
           end
 
-          it 'should raise an error if dataset belongs to another user and is unpublished'
-          # TODO create dataset on another user
+          it 'should raise an error if dataset belongs to another user and is unpublished' do
+            expect{@client.dataset_overview UNPUBLISHED_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
 
-          it 'should raise an error if dataset belongs to another user and is private'
-          # TODO create dataset on another user
+          it 'should raise an error if dataset belongs to another user and is private' do
+            expect{@client.dataset_overview PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
         end
 
         describe '#dataset_history' do
-          it 'should get the history of a dataset'
-          it 'should raise an error if dataset is unpublished'
-          it 'should raise an error if dataset is nonexistent' do
-            expect{@client.dataset_history 'missing/missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          it 'should get the history of a dataset' do
+            dataset = create_and_publish_dataset
+            response = @client.dataset_history dataset['id']
+
+            response.should have(1).item
+            response.each do |x|
+              x.should have(3).items
+              x['version'].should == 0
+              x['created_at'].should == dataset['created_at']
+              x['username'].should == dataset['username']
+            end
           end
 
-          it 'should get the history of a dataset if it belongs to user and is private'
+          it 'should raise an error if dataset is nonexistent' do
+            expect{@client.dataset_history NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          end
 
-          it 'should raise an error if dataset belongs to another user and is private'
-          # TODO create dataset on another user
+          it 'should get the history of a dataset if it belongs to user and is unpublished' do
+            dataset = create_dataset
+            @client.dataset_history(dataset['id']).should be_empty
+          end
+
+          it 'should get the history of a dataset if it belongs to user and is private' do
+            dataset = create_and_publish_dataset :public => false
+            @client.dataset_history(dataset['id']).should have(1).item
+          end
+
+          it 'should raise an error if dataset belongs to another user and is unpublished' do
+            expect{@client.dataset_history UNPUBLISHED_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
+
+          it 'should raise an error if dataset belongs to another user and is private' do
+            expect{@client.dataset_history PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
         end
 
         describe '#publish_dataset' do
@@ -299,18 +332,17 @@ class Buzzdata
           end
 
           it 'should raise an error if dataset is nonexistent' do
-            expect{@client.publish_dataset 'missing/missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+            expect{@client.publish_dataset NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
           end
 
           it 'should raise an error if dataset belongs to another user' do
-            expect{@client.publish_dataset 'eviltrout/pets'}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+            expect{@client.publish_dataset UNPUBLISHED_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
           end
-          # TODO use unpublished dataset on another user instead
         end
 
         describe '#clone_dataset' do
           it 'should clone a dataset' do
-            dataset = @client.dataset_overview 'eviltrout/pets'
+            dataset = @client.dataset_overview CLONABLE_DATASET
             response = clone_dataset dataset['id']
 
             dataset['id'] = "#{@username}/#{dataset['shortname']}"
@@ -326,16 +358,18 @@ class Buzzdata
             Time.parse(response['created_at']).should be_within(5).of(Time.now)
           end
 
-          it 'should raise an error if dataset is unpublished'
-          # TODO create dataset on another user
+          it 'should raise an error if dataset is unpublished' do
+            dataset = create_dataset
+            expect{clone_dataset dataset['id']}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
 
           it 'should raise an error if dataset is nonexistent' do
-            expect{clone_dataset 'missing/missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+            expect{clone_dataset NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
           end
 
           it 'should raise an error if dataset is already cloned' do
-            dataset = clone_dataset 'eviltrout/pets'
-            expect{clone_dataset 'eviltrout/pets'}.to raise_error(Buzzdata::Error, 'Name has already been taken by one of your other datasets.')
+            dataset = clone_dataset CLONABLE_DATASET
+            expect{clone_dataset CLONABLE_DATASET}.to raise_error(Buzzdata::Error, 'Name has already been taken by one of your other datasets.')
           end
 
           it 'should raise an error if dataset belongs to user' do
@@ -343,8 +377,13 @@ class Buzzdata
             expect{clone_dataset dataset['id']}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
           end
 
-          it 'should raise an error if dataset belongs to another user and is private'
-          # TODO create dataset on another user
+          it 'should raise an error if dataset belongs to another user and is unpublished' do
+            expect{clone_dataset UNPUBLISHED_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
+
+          it 'should raise an error if dataset belongs to another user and is private' do
+            expect{clone_dataset PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
         end
 
         describe '#licenses' do
@@ -369,47 +408,88 @@ class Buzzdata
         end
 
         describe '#search' do
-          it 'should search BuzzData'
+          it 'should search BuzzData' do
+            response = @client.search 'buzzdata'
+            response.should have_at_least(1).item
+            response.each do |x|
+              %(label value id url type).each do |key|
+                x.should have_key(key)
+              end
+            end
+          end
         end
 
         describe '#datasets_list' do
-          it 'should list datasets'
-          it 'should not list unpublished datasets'
+          it 'should list datasets' do
+            dataset = create_and_publish_dataset
+            response = @client.datasets_list @username
 
-          it 'should raise an error if user is nonexistent' do
-            expect{@client.datasets_list 'missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+            response.should have(1).item
+            response.each do |x|
+              x.keys.should have(5).items
+              x.each do |key,value|
+                dataset[key].should == value
+              end
+            end
           end
 
-          it 'should list private datasets if they belong to user'
+          it 'should raise an error if user is nonexistent' do
+            expect{@client.datasets_list NONEXISTENT_USER}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          end
 
-          it 'should not list private datasets if they belong to another user'
-          # TODO create dataset on another user
+          it 'should list a dataset if it belongs to user and is unpublished' do
+            dataset = create_dataset
+            @client.datasets_list(@username).should have(1).item
+          end
+
+          it 'should list a dataset if it belongs to user and is private' do
+            dataset = create_and_publish_dataset :public => false
+            @client.datasets_list(@username).should have(1).item
+          end
+
+          it 'should not list private datasets if they belong to another user' do
+            response = @client.datasets_list USER_WITH_PRIVATE_DATASET
+            response.map{|dataset| dataset['id']}.should_not include PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER
+          end
         end
 
         describe '#download_data' do
-          it 'should download a dataset'
-          it 'should raise an error if dataset is unpublished'
-
-          it 'should raise an error if dataset is nonexistent' do
-            expect{@client.download_data 'missing/missing'}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          it 'should download a dataset' do
+            dataset = create_and_publish_dataset
+            response = @client.download_data dataset['id']
+            response.should == File.read(fixture_path('data.csv'))
           end
 
-          it 'should download a dataset if it belongs to user and is private'
+          it 'should raise an error if dataset is unpublished' do
+            dataset = create_dataset
+            expect{@client.download_data dataset['id']}.to raise_error(Buzzdata::Error, '')
+          end
 
-          it 'should raise an error if dataset belongs to another user and is private'
-          # TODO create dataset on another user
+          it 'should raise an error if dataset is nonexistent' do
+            expect{@client.download_data NONEXISTENT_DATASET}.to raise_error(Buzzdata::Error, 'That dataset could not be found')
+          end
+
+          it 'should download a dataset if it belongs to user and is private' do
+            dataset = create_and_publish_dataset :public => false
+            response = @client.download_data dataset['id']
+            response.should == File.read(fixture_path('data.csv'))
+          end
+
+          it 'should raise an error if dataset belongs to another user and is private' do
+            expect{@client.download_data PRIVATE_DATASET_BELONGING_TO_ANOTHER_USER}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
+          end
         end
 
         describe '#user_info' do
           it 'should get user info' do
-            response = @client.user_info 'eviltrout'
+            response = @client.user_info GENERIC_USER
 
             response.keys.should have(5).items
-            response['id'].should == 'eviltrout'
+            response['id'].should == GENERIC_USER
           end
 
           it 'should raise an error if user is nonexistent' do
-            expect{@client.user_info 'missing'}.to raise_error(Buzzdata::Error, '')
+            expect{@client.user_info NONEXISTENT_USER}.to raise_error(Buzzdata::Error, '')
           end
         end
       end
