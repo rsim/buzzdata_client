@@ -95,7 +95,7 @@ class Buzzdata
   end
 
   def delete_dataset(dataset)
-    delete_json(url_for("#{dataset}"))
+    delete_json(url_for(dataset))
   end
 
   def licenses
@@ -126,10 +126,10 @@ class Buzzdata
   def create_dataset(attributes)
     
     # Validate attributes
-    raise BuzzData::Error, "Missing attributes" if attributes.nil?    
+    raise Buzzdata::Error, "Missing attributes" if attributes.nil?
     raise Buzzdata::Error, "Username is required" if param_blank?(attributes, :username)
     raise Buzzdata::Error, "Dataset name is required" if param_blank?(attributes, :name)
-    raise Buzzdata::Error, "Dataset readme is required" if param_blank?(attributes, :name)
+    raise Buzzdata::Error, "Dataset readme is required" if param_blank?(attributes, :readme)
     raise Buzzdata::Error, "Dataset license is required" if param_blank?(attributes, :license)
     raise Buzzdata::Error, "Dataset topics are required" if param_blank?(attributes, :topics)
 
