@@ -67,7 +67,12 @@ class Buzzdata
         dataset = create_dataset attributes
         upload = @client.start_upload dataset['id'], File.new(fixture_path('data.csv'))
         sleep 1 while upload.in_progress?
-        @client.publish_dataset dataset['id']
+        sleep 5
+        if upload.success?
+          @client.publish_dataset dataset['id']
+        else
+          raise upload.status_message
+        end
       end
 
       def clone_dataset(id)
@@ -311,6 +316,7 @@ class Buzzdata
             dataset = create_dataset
             upload = @client.start_upload dataset['id'], File.new(fixture_path('data.csv'))
             sleep 1 while upload.in_progress?
+            sleep 5
             response = @client.publish_dataset dataset['id']
 
             dataset['published'] = true
@@ -323,11 +329,13 @@ class Buzzdata
 
           it 'should raise an error if no data uploaded' do
             dataset = create_dataset
+            sleep 5
             expect{@client.publish_dataset dataset['id']}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
           end
 
           it 'should raise an error if dataset is already published' do
             dataset = create_and_publish_dataset
+            sleep 5
             expect{@client.publish_dataset dataset['id']}.to raise_error(Buzzdata::Error, '')
           end
 
