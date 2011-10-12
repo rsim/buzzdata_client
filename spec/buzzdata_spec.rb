@@ -8,6 +8,7 @@ class Buzzdata
     GENERIC_USER = 'eviltrout'
     NONEXISTENT_USER = 'missing'
     USER_WITH_PRIVATE_DATASET = 'jpmckinney'
+    PUBLISH_SLEEP_INTERVAL = 5
 
     CLONABLE_DATASET = 'eviltrout/pets'
     NONEXISTENT_DATASET = 'missing/missing'
@@ -67,7 +68,7 @@ class Buzzdata
         dataset = create_dataset attributes
         upload = @client.start_upload dataset['id'], File.new(fixture_path('data.csv'))
         sleep 1 while upload.in_progress?
-        sleep 5
+        sleep PUBLISH_SLEEP_INTERVAL
         if upload.success?
           @client.publish_dataset dataset['id']
         else
@@ -316,27 +317,33 @@ class Buzzdata
             dataset = create_dataset
             upload = @client.start_upload dataset['id'], File.new(fixture_path('data.csv'))
             sleep 1 while upload.in_progress?
-            sleep 5
+            sleep PUBLISH_SLEEP_INTERVAL
             response = @client.publish_dataset dataset['id']
 
             dataset['published'] = true
+            dataset.delete 'created_at' # XXX this is unusual
 
             response.keys.should have(10).items
-            response.each do |key,value|
-              dataset[key].should == value
+            dataset.each do |key,value|
+              response[key].should == value
             end
           end
 
           it 'should raise an error if no data uploaded' do
             dataset = create_dataset
-            sleep 5
+            sleep PUBLISH_SLEEP_INTERVAL
             expect{@client.publish_dataset dataset['id']}.to raise_error(Buzzdata::Error, "You don't have permission to do that")
           end
 
           it 'should raise an error if dataset is already published' do
             dataset = create_and_publish_dataset
-            sleep 5
-            expect{@client.publish_dataset dataset['id']}.to raise_error(Buzzdata::Error, '')
+            sleep PUBLISH_SLEEP_INTERVAL
+            response = @client.publish_dataset dataset['id']
+
+            # XXX this is unusual: check that values are identical
+            dataset.each do |key,value|
+              response[key].should == value
+            end
           end
 
           it 'should raise an error if dataset is nonexistent' do
@@ -357,7 +364,7 @@ class Buzzdata
             dataset['username'] = @username
             dataset['license'] = nil
             dataset['data_updated_at'] = nil
-            dataset.delete 'created_at'
+            dataset.delete 'created_at' # XXX this is unusual
 
             response.keys.should have(10).items
             dataset.each do |key,value|
