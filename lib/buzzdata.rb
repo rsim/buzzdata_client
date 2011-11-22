@@ -6,7 +6,6 @@ require 'yaml'
 # Our code
 require_relative 'buzzdata/error'
 require_relative 'buzzdata/rest_helpers'
-require_relative 'buzzdata/upload'
 
 class Buzzdata
   YAML_ERRORS = [ArgumentError]
@@ -56,18 +55,15 @@ class Buzzdata
     result['upload_request']
   end
 
-  def start_upload(dataset, file)
+  def upload(dataset, file, release_notes = "")
     upload_request = new_upload_request(dataset)
 
     # Prepare our request
     post_url = upload_request.delete('url')
     upload_request['file'] = file
+    upload_request['release_notes'] = release_notes
     
-    Buzzdata::Upload.new(self, dataset, post_json(post_url, upload_request))    
-  end 
-
-  def upload_status(dataset, job_status_token)
-    get_json(url_for("#{dataset}/upload_request/status"), :job_status_token => job_status_token)
+    post_json(post_url, upload_request)
   end
 
   def download_path(dataset)

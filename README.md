@@ -33,7 +33,7 @@ You can view a user's datasets by calling `datasets_list`. You'll get back an ar
     >> datasets.each {|ds| puts ds['id'] }
 
 
-## Upload History
+## Dataset History
 
 You can retrieve a list of uploaded versions of a dataset by calling `dataset_history`:
 
@@ -57,17 +57,7 @@ You can use the `create_dataset` method to create a new dataset. All fields are 
 
 If your account has the ability to upload data to a dataset, you can do so like this:
 
-    >> upload = buzzdata.start_upload('eviltrout/b-list-celebrities', File.new('datasets/celebrities.csv')
-
-Uploads take some time to be processed. You can poll how the processing is going using `in_progress?`
-
-    >> upload.in_progress?   # true - upload is going on
-
-    # (wait for some time to pass..)
-
-    >> upload.in_progress?   # false - upload is done!
-
-For a more thourough example of this, look at the sample in *samples/upload_data.rb*
+    >> buzzdata.upload('eviltrout/b-list-celebrities', File.new('datasets/celebrities.csv')
 
 
 ## Publish a dataset
@@ -162,7 +152,8 @@ To retrieve information about a dataset, simply make a GET:
        "visualizations_count":10,
        "attachments_count":2,
        "created_at":"2011-07-12T14:31:21-04:00",
-       "data_updated_at":"2011-07-12T14:41:52-04:00"}}
+       "data_updated_at":"2011-07-12T14:41:52-04:00",
+       "preview_available":true}}
 
 
 ## Listing Datasets
@@ -280,7 +271,7 @@ To upload data to the system, you need to create an `upload_request`. An upload 
 
 ## Performing an Upload
 
-After creating an `upload_request`, you can then POST your data file to be ingested. To do this, send a POST request to the `url` you received in your `upload_request` JSON.
+After creating an `upload_request`, you can then POST your data file. To do this, send a POST request to the `url` you received in your `upload_request` JSON.
 
 *note: Make sure your POST is a multipart, otherwise the file upload will not work.*
 
@@ -292,38 +283,10 @@ After creating an `upload_request`, you can then POST your data file to be inges
 
 **Returns JSON:**
 
-    [{"name"=>"kittens_born.csv", "size"=>187, "job_status_token"=>"a24b2155-e2ec-48d4-8bc0-f77e3758966f"}]
+    [{"name"=>"kittens_born.csv", "size"=>187}]
 
 * `name` = the filename of the upload.
 * `size` = the size of the upload in bytes
-* `job_status_token` = an important 
-
-
-## Checking your Upload Status
-
-After a file has been uploaded, you can check out the upload's status by making a GET to:
-
-**GET https://buzzdata.com/api/:username/:dataset/upload_request/status**
-
-* `:username` = your username: ex: 'eviltrout'
-* `:dataset` = the short name (url name) of the dataset you are uploading to. For example: 'b-list-celebrities'
-
-**GET Parameters:**
-
-* `api_key` = your API Key
-* `job_status_token` = The job status token you received when you performed your upload.
-
-**Returns JSON:**
-
-    {"message"=>"Ingest Job Created", "status_code"=>"created"}
-
-* `message` is a textual description of the current status, or an error message in the event of an error
-* `status_code` is the status of the current job. The job has finished when it is `complete` or `error`.
-
-Important! You should wait a little while between polls to the job status. We recommend sleeping for one second in most cases.
-
-Note: If you receive a status of 'Unknown' it means the file has not begun processing yet. If you continue to poll it will move to 'created'
-
 
 ## Publishing a Dataset
 
