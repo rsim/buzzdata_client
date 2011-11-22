@@ -57,7 +57,7 @@ You can use the `create_dataset` method to create a new dataset. All fields are 
 
 If your account has the ability to upload data to a dataset, you can do so like this:
 
-    >> buzzdata.upload('eviltrout/b-list-celebrities', File.new('datasets/celebrities.csv')
+    >> buzzdata.upload('eviltrout/b-list-celebrities', File.new('datasets/celebrities.csv', 'Release notes...')
 
 
 ## Publish a dataset
@@ -280,6 +280,7 @@ After creating an `upload_request`, you can then POST your data file. To do this
 * `api_key` = your API Key
 * `upload_code` = the `upload_code` returned in the `upload_request`
 * `file` = the file data you are uploading to be ingested
+* `relase_notes` = the change/release notes for this upload
 
 **Returns JSON:**
 
