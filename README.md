@@ -154,6 +154,13 @@ To retrieve information about a dataset, simply make a GET:
        "public":true,
        "license":"cc0",
        "published":true,
+       "url":"http://buzzdata.com/eviltrout/b-list-celebrities",
+       "avatar":"/images/avatars/b9/e987d17045c649da4de2a580e8109d655e6a12?1312292315",
+       "followers_count":10,
+       "clones_count":2,
+       "articles_count":5,
+       "visualizations_count":10,
+       "attachments_count":2,
        "created_at":"2011-07-12T14:31:21-04:00",
        "data_updated_at":"2011-07-12T14:41:52-04:00"}}
 
@@ -172,11 +179,13 @@ You can view a list of any user's datasets.
 
     [
       {"id":"eviltrout/b-list-celebrities",
+        "url":"http://buzzdata.com/eviltrout/b-list-celebrities",
         "name":"B-List Celebrities",
         "public":true,
         "published":true,
         "readme":"Here's a list of B-List Celebrities that I've curated."},
        {"id":"eviltrout/pets",
+        "url":"http://buzzdata.com/eviltrout/pets",
         "name":"Pets",
         "public":true,
         "published":true,
@@ -373,7 +382,9 @@ To retrieve information about a particular BuzzData user, perform the following 
        "name":"Robin Ward",
        "description":"The Evilest Trout of them all and BuzzData Developer",
        "location":"Toronto, Canada",
-       "avatar":"/images/avatars/b9/e987d17045c649da4de2a580e8109d655e6a12?1312292315"}
+       "url":"http://buzzdata.com/eviltrout",
+       "avatar":"/images/avatars/b9/e987d17045c649da4de2a580e8109d655e6a12?1312292315",
+       "followers_count": 12}
     }
 
 
