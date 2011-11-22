@@ -11,6 +11,7 @@ module RestHelpers
     
     define_method(method) do |url, params={}|
       params['api_key'] = @api_key
+      params = {:params => params} unless method == :post
 
       RestClient.send(method, url, params) do |response, request, result, &block|        
         case response.code
