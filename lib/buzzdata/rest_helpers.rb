@@ -8,12 +8,14 @@ module RestHelpers
 
   # Define methods for our HTTP verbs
   [:post, :put, :get, :delete].each do |method|
-    
-    define_method(method) do |url, params={}|
-      params['api_key'] = @api_key
-      params = {:params => params} unless method == :post
 
-      RestClient.send(method, url, params) do |response, request, result, &block|        
+    module_eval <<-RUBY #, __FILE__, __LINE__
+
+    def #{method}(url, params={})
+      params['api_key'] = @api_key
+      params = {:params => params} unless :#{method} == :post
+
+      RestClient.send(:#{method}, url, params) do |response, request, result, &block|
         case response.code
         when 403, 404, 500
           handle_error(response)
@@ -24,10 +26,12 @@ module RestHelpers
     end
 
     # Define methods for our verbs with json handling
-    define_method("#{method}_json") do |path, params={}|
-      response = send(method, path, params)
+    def #{method}_json(path, params={})
+      response = send(:#{method}, path, params)
       JSON.parse(response.body)
     end
+
+    RUBY
 
   end
   

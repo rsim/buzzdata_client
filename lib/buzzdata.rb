@@ -4,9 +4,9 @@ require 'json'
 require 'yaml'
 
 # Our code
-require_relative 'buzzdata/error'
-require_relative 'buzzdata/rest_helpers'
-require_relative 'buzzdata/upload'
+require 'buzzdata/error'
+require 'buzzdata/rest_helpers'
+require 'buzzdata/upload'
 
 class Buzzdata
   YAML_ERRORS = [ArgumentError]
